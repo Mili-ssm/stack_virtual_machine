@@ -1,0 +1,21 @@
+
+
+[package]
+name = "stack_machine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4.22"
+test-log = "0.2.16"
+
+
+[profile.test]
+debug = "none"
+strip = "debuginfo"
+lto = true
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+overflow-checks = false
+debug-assertions = false
