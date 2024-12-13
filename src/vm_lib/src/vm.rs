@@ -61,11 +61,19 @@ impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
         &self.variable_table[pointer]
     }
 
-    pub fn remove(&mut self, pointer: usize) -> D {
+    pub fn free(&mut self, pointer: usize) -> D {
         let result = self.variable_table[pointer].clone();
         self.variable_table[pointer] = D::default();
 
         result
+    }
+
+    pub fn malloc(&mut self, size: usize) -> usize {
+        let pointer = self.variable_table.len();
+
+        self.variable_table.extend(vec![D::default(); size]);
+
+        pointer
     }
 
     pub fn load_const(&self, pointer: usize) -> &D {
