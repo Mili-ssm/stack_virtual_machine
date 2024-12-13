@@ -7,8 +7,6 @@ use crate::{
     instructions::{BinaryOp, Instruction},
 };
 
-//const type_size: usize = std::mem::size_of::<Data>();
-
 #[test_log::test]
 fn test() {
     let result = 0_usize;
@@ -32,8 +30,6 @@ fn test() {
     ];
 
     info!("CODE: {:?}", &code);
-    let mut vm = StackMachine::new(code);
-    vm.variable_table.resize(8, Data::None);
-    vm.const_table.resize(8, Data::None);
+    let mut vm = StackMachine::new(code, 8);
     vm.run();
 }

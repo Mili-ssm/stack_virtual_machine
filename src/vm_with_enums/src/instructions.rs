@@ -1,4 +1,3 @@
-use log::info;
 use vm_lib::{BasicOp, Stack, StackMachine};
 
 use crate::data_types::Data;
@@ -48,12 +47,12 @@ fn binary_op(vm: &mut StackMachine<Data, Instruction>, op: &BinaryOp) -> () {
 }
 
 fn jump(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
-    let offset = match arg {
-        Data::Pointer(name) => &vm.variable_table[*name],
+    let ipointer = match arg {
+        Data::Pointer(name) => vm.load(*name),
         arg => arg,
     };
-    if let &Data::Int(offset) = offset {
-        vm.ipointer = offset as usize;
+    if let &Data::Pointer(ipointer) = ipointer {
+        vm.jump(ipointer as usize);
     } else {
         panic!("Jump offset must be an integer");
     }
@@ -61,22 +60,20 @@ fn jump(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
 
 fn print(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
     let value = match arg {
-        Data::Pointer(name) => &vm.variable_table[*name],
+        Data::Pointer(name) => vm.load(*name),
         arg => arg,
     };
 
-    info!("\t PRINTING: {:?}", value);
-    println!("{:?}", value);
+    vm.print(value);
 }
 
 fn load(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
     let value = match arg {
-        Data::Pointer(name) => &vm.variable_table[*name],
+        Data::Pointer(name) => vm.load(*name),
         arg => arg,
     };
 
     vm.stack.push(value.clone());
-    info!("\t STACK: {:?}", vm.stack);
 }
 
 fn store(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
@@ -85,19 +82,20 @@ fn store(vm: &mut StackMachine<Data, Instruction>, arg: &Data) -> () {
         _ => panic!("Store argument must be a variable name"),
     };
 
-    vm.variable_table[name] = vm.stack.pop();
-    info!("\t HEAP: {:?}", vm.variable_table);
+    let [result] = vm.stack.pop::<1>();
+
+    vm.store(name, result);
 }
 
 fn add(stack: &mut Stack<Data>) -> () {
-    let [a, b] = stack.drop::<2>();
+    let [a, b] = stack.pop::<2>();
 
     let result = match (a, b) {
         (Data::Int(a), Data::Int(b)) => Data::Int(a + b),
         (Data::Float(a), Data::Float(b)) => Data::Float(a + b),
         (Data::Byte(a), Data::Byte(b)) => Data::Byte(a + b),
         (Data::ByteArray(mut a), Data::ByteArray(b)) => {
-            a.extend(b.as_ref());
+            a.extend(*b);
             Data::ByteArray(a)
         }
         (Data::String(mut a), Data::String(b)) => {
@@ -111,7 +109,7 @@ fn add(stack: &mut Stack<Data>) -> () {
 }
 
 fn substract(stack: &mut Stack<Data>) -> () {
-    let [a, b] = stack.drop::<2>();
+    let [a, b] = stack.pop::<2>();
 
     let result = match (a, b) {
         (Data::Int(a), Data::Int(b)) => Data::Int(a - b),
@@ -124,7 +122,7 @@ fn substract(stack: &mut Stack<Data>) -> () {
 }
 
 fn multiply(stack: &mut Stack<Data>) -> () {
-    let [a, b] = stack.drop::<2>();
+    let [a, b] = stack.pop::<2>();
 
     let result = match (a, b) {
         (Data::Int(a), Data::Int(b)) => Data::Int(a * b),
@@ -137,7 +135,7 @@ fn multiply(stack: &mut Stack<Data>) -> () {
 }
 
 fn divide(stack: &mut Stack<Data>) -> () {
-    let [a, b] = stack.drop::<2>();
+    let [a, b] = stack.pop::<2>();
 
     let result = match (a, b) {
         (Data::Int(a), Data::Int(b)) => Data::Int(a / b),

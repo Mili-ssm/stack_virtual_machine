@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+use vm_lib::NativeType;
+
+#[derive(Debug, Clone, Default)]
 pub enum Data {
     Int(i64),
     Float(f64),
@@ -12,5 +14,9 @@ pub enum Data {
     Tuple(Box<Vec<Data>>),
     Class(Box<HashMap<String, Data>>),
     Pointer(usize),
+
+    #[default]
     None,
 }
+
+impl NativeType for Data {}
