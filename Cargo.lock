@@ -226,14 +226,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stack_machine"
-version = "0.1.0"
-dependencies = [
- "log",
- "test-log",
-]
-
-[[package]]
 name = "syn"
 version = "2.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -341,6 +333,32 @@ name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+
+[[package]]
+name = "vm_lib"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "test-log",
+]
+
+[[package]]
+name = "vm_with_enums"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "test-log",
+ "vm_lib",
+]
+
+[[package]]
+name = "vm_with_traits"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "test-log",
+ "vm_lib",
+]
 
 [[package]]
 name = "winapi"

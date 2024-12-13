@@ -1,0 +1,10 @@
+[package]
+name = "vm_with_traits"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+log = "0.4.22"
+test-log = "0.2.16"
+vm_lib = { version = "0.1.0", path = "../vm_lib" }

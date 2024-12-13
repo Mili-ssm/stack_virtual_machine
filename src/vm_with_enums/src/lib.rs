@@ -1,9 +1,9 @@
-use crate::stack_vm::{BasicOp, Stack, StackMachine};
 use log::info;
-use std::{borrow::Borrow, collections::HashMap, io::Write};
+use std::collections::HashMap;
+use vm_lib::{BasicOp, Stack, StackMachine};
 
 #[derive(Debug, Clone)]
-enum Data {
+pub enum Data {
     Int(i64),
     Float(f64),
     Bool(bool),
@@ -20,7 +20,7 @@ enum Data {
 //const type_size: usize = std::mem::size_of::<Data>();
 
 #[derive(Debug, Clone)]
-enum BinaryOp {
+pub enum BinaryOp {
     Add,
     Subtract,
     Multiply,
@@ -28,7 +28,7 @@ enum BinaryOp {
 }
 
 #[derive(Debug, Clone)]
-enum Instruction {
+pub enum Instruction {
     Load(Data),
     Store(Data),
     Jump(Data),

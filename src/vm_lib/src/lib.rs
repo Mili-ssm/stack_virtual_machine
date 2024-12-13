@@ -1,6 +1,8 @@
+#![feature(inherent_associated_types)]
+#![feature(generic_const_exprs)]
+#![allow(dead_code)]
+
 use std::{
-    alloc::System,
-    cell::RefCell,
     collections::{BTreeMap, HashMap},
     fmt::Debug,
     process::exit,
