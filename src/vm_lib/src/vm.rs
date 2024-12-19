@@ -1,8 +1,8 @@
-use std::{fmt::Debug, process::exit, vec};
+use std::{process::exit, vec};
 
 use log::{info, warn};
 
-use crate::{BasicOp, FunctionOps, NativeType, STACK_SIZE, Stack, stack};
+use crate::{BasicOp, FunctionOps, NativeType, Stack};
 pub struct StackMachine<D: NativeType, Op: BasicOp<D>> {
     const_table: Vec<D>,
     variable_table: Vec<D>,
@@ -27,7 +27,8 @@ impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
             run_timer: std::time::Instant::now(),
         }
     }
-    pub fn run(&mut self) -> () {
+
+    pub fn run(&mut self) {
         let code = self.code.clone();
         self.run_timer = std::time::Instant::now();
 
@@ -41,7 +42,7 @@ impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
         }
     }
 
-    pub fn halt(&mut self) -> () {
+    pub fn halt(&mut self) {
         let elapsed = self.run_timer.elapsed();
         println!("Execution time: {:?}", elapsed);
 
@@ -51,7 +52,7 @@ impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
         exit(0);
     }
 
-    pub fn store(&mut self, pointer: usize, arg: D) -> () {
+    pub fn store(&mut self, pointer: usize, arg: D) {
         self.variable_table[pointer] = arg;
         info!("\t HEAP: {:?}", self.variable_table);
     }
@@ -80,7 +81,7 @@ impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
         &self.const_table[pointer]
     }
 
-    pub fn print(&self, arg: &D) -> () {
+    pub fn print(&self, arg: &D) {
         info!("\t PRINTING: {:?}", arg);
         println!("{:?}", arg);
     }
