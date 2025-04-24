@@ -1,6 +1,8 @@
 
+
 [workspace]
 members = ["src/*"]
+resolver = "3"
 
 
 [workspace.dependencies]
@@ -11,7 +13,7 @@ test-log = "0.2.16"
 [profile.test]
 debug = "none"
 strip = "debuginfo"
-lto = true
+lto = "fat"
 codegen-units = 1
 opt-level = 3
 panic = "abort"

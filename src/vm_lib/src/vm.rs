@@ -1,92 +1,147 @@
-use std::{process::exit, vec};
+use std::random::random;
 
-use log::{info, warn};
+use log::{debug, trace, warn};
 
-use crate::{BasicOp, FunctionOps, NativeType, Stack};
-pub struct StackMachine<D: NativeType, Op: BasicOp<D>> {
-    const_table: Vec<D>,
-    variable_table: Vec<D>,
-    //
+use crate::{Executable, NativeType, ProgramCode, Runnable, Stack, bytecode::ByteCode};
+
+// ------------------------
+// MARK: TYPES
+//------------------------
+
+pub struct ProcessContext<D: NativeType> {
     pub stack: Stack<D>,
-    code: FunctionOps<Op>,
-    //
     ipointer: usize,
-    pub run_timer: std::time::Instant,
+    calls_history: Vec<usize>,
+    is_finished: bool,
+    run_timer: std::time::Instant,
 }
 
-impl<D: NativeType, Op: BasicOp<D>> StackMachine<D, Op> {
-    pub fn new(code: FunctionOps<Op>, stack_size: usize) -> Self {
+pub struct Process<Op, D>
+where
+    Op: Executable<D>,
+    D: NativeType,
+{
+    pid: usize,
+    //
+    code: ByteCode<Op, D>,
+    context: ProcessContext<D>,
+}
+
+pub struct StackMachine<D: NativeType> {
+    //
+    pub heap: Stack<D>,
+    pub proceses: Vec<Box<dyn Runnable<D>>>,
+}
+
+// ------------------------
+// MARK: IMPLEMENTS
+//------------------------
+
+impl<D: NativeType + 'static> StackMachine<D> {
+    pub fn new() -> Self {
         StackMachine {
-            const_table: Vec::new(),
-            variable_table: vec![D::default(); stack_size],
-            //
-            stack: Stack::<D>::new(stack_size),
-            code,
-            //
-            ipointer: 0,
-            run_timer: std::time::Instant::now(),
+            heap: Stack::<D>::new(1024),
+            proceses: vec![],
         }
     }
 
     pub fn run(&mut self) {
-        let code = self.code.clone();
-        self.run_timer = std::time::Instant::now();
+        let mut running_process = 0;
+        while self.proceses.len() > 0 {
+            if running_process >= self.proceses.len() {
+                running_process = 0;
+            }
 
-        loop {
-            let op = unsafe { code.get_unchecked(self.ipointer) };
-            //println!("");
-            info!("Executing IP: {}  OP {:?}", self.ipointer, op);
+            let process = self.proceses[running_process].as_mut();
+            process.run();
 
-            self.ipointer += 1;
-            op.execute(self);
+            if process.is_finished() {
+                self.proceses.remove(running_process);
+                continue;
+            }
+
+            running_process += 1;
         }
     }
 
-    pub fn halt(&mut self) {
-        let elapsed = self.run_timer.elapsed();
-        println!("Execution time: {:?}", elapsed);
+    pub fn add_process<Op: Executable<D>>(&mut self, program_code: ProgramCode<Op, D>) {
+        let bytecode = program_code.compile();
+        let process = Box::new(Process::new(64, bytecode));
+        self.proceses.push(process);
+    }
+}
 
-        self.ipointer = usize::MAX;
+impl<Op: Executable<D>, D: NativeType> Process<Op, D> {
+    pub fn new(stack_size: usize, code: ByteCode<Op, D>) -> Self {
+        Process {
+            pid: random(),
+            code,
+            //
+            context: ProcessContext {
+                stack: Stack::<D>::new(stack_size),
+                run_timer: std::time::Instant::now(),
+                ipointer: 0,
+                calls_history: vec![],
+                is_finished: false,
+            },
+        }
+    }
+}
 
-        warn!("EXITING VM");
-        exit(0);
+impl<D: NativeType> ProcessContext<D> {
+    pub fn goto(&mut self, ipntr: usize) {
+        self.ipointer = ipntr;
     }
 
-    pub fn store(&mut self, pointer: usize, arg: D) {
-        self.variable_table[pointer] = arg;
-        info!("\t HEAP: {:?}", self.variable_table);
+    pub fn get_ipntr(&self) -> usize {
+        self.ipointer
     }
 
-    pub fn load(&self, pointer: usize) -> &D {
-        info!("\t HEAP: {:?}", self.variable_table);
-        &self.variable_table[pointer]
+    pub fn goto_rel(&mut self, offset: isize) {
+        self.goto(self.get_rel_ipntr(offset));
     }
 
-    pub fn free(&mut self, pointer: usize) -> D {
-        let result = self.variable_table[pointer].clone();
-        self.variable_table[pointer] = D::default();
-
-        result
-    }
-
-    pub fn malloc(&mut self, size: usize) -> usize {
-        let pointer = self.variable_table.len();
-
-        self.variable_table.extend(vec![D::default(); size]);
-
-        pointer
-    }
-
-    pub fn load_const(&self, pointer: usize) -> &D {
-        &self.const_table[pointer]
+    pub fn get_rel_ipntr(&self, offset: isize) -> usize {
+        self.get_ipntr().overflowing_add_signed(offset).0
     }
 
     pub fn print(&self, arg: &D) {
-        info!("\t PRINTING: {:?}", arg);
+        trace!("\t PRINTING: {:?}", arg);
         println!("{:?}", arg);
     }
 
-    pub fn jump(&mut self, ipointer: usize) {
-        self.ipointer = ipointer;
+    pub fn halt(&mut self) {
+        println!("Execution time: {:?}", self.run_timer.elapsed());
+
+        warn!("EXITING VM");
+
+        debug!("STACK: {:?}", self.stack);
+        debug!("IP: {:?}", self.ipointer);
+
+        self.is_finished = true;
+
+        //self.context.ipointer = usize::MAX;
+        //exit(0)
+    }
+}
+
+impl<Op: Executable<D>, D: NativeType> Runnable<D> for Process<Op, D> {
+    #[inline]
+    fn run(&mut self) {
+        loop {
+            self.code
+                .get_at(self.context.ipointer)
+                .execute(&mut self.context);
+
+            self.context.ipointer += 1;
+            if self.context.is_finished {
+                break;
+            }
+        }
+    }
+
+    #[inline]
+    fn is_finished(&self) -> bool {
+        self.context.is_finished
     }
 }

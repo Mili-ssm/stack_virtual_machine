@@ -1,6 +1,6 @@
-use std::{default, fmt::Debug};
+use std::fmt::Debug;
 
-use log::info;
+use log::debug;
 
 use crate::NativeType;
 
@@ -20,15 +20,22 @@ impl<T: NativeType> Stack<T> {
         }
     }
 
-    pub fn push(&mut self, item: T) {
-        if self.pointer < STACK_SIZE {
-            self.data[self.pointer] = item;
-            self.pointer += 1;
-        } else {
-            panic!("Stack overflow");
-        }
+    pub fn to_register(&mut self, value: T) {
+        self.store_at(self.pointer, value);
+    }
 
-        info!("\t STACK: {:?}", self);
+    pub fn store_at(&mut self, pointer: usize, value: T) {
+        self.data[pointer] = value;
+
+        debug!("\t STACK: {:?}", self);
+    }
+
+    pub fn store_register(&mut self) -> usize {
+        let pointer = self.pointer;
+        self.pointer += 1;
+
+        debug!("\t STACK: {:?}", self);
+        pointer
     }
 
     pub fn pop<const N: usize>(&mut self) -> [T; N] {
@@ -42,10 +49,32 @@ impl<T: NativeType> Stack<T> {
 
         result
     }
-    pub fn peek(&self) -> Option<&T> {
-        self.data.get(self.pointer - 1)
+
+    pub fn swap(&mut self) {
+        self.data.swap(self.pointer - 1, self.pointer);
+
+        debug!("\t STACK: {:?}", self);
     }
 
+    pub fn peek<const N: usize>(&self) -> [T; N] {
+        let len = self.pointer;
+        let pointer = self.pointer - N;
+
+        let mut result = std::array::repeat(T::default());
+        result.clone_from_slice(&self.data[pointer..len]);
+
+        //info!("\t STACK: {:?}", self);
+
+        result
+    }
+    pub fn peek_at(&self, pointer: usize) -> &T {
+        &self.data[pointer]
+    }
+
+    pub fn peek_register(&self, pointer: usize) -> &T {
+        let pointer = self.pointer - pointer;
+        &self.data[pointer]
+    }
     pub fn len(&self) -> usize {
         self.pointer
     }

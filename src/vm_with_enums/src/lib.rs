@@ -1,3 +1,5 @@
+#![feature(thin_box)]
+
 pub mod data_types;
 pub mod instructions;
 
